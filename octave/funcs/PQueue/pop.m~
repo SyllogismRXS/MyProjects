@@ -1,0 +1,3 @@
+function [x] = pop(myList)
+    x = myList(end,:);
+end

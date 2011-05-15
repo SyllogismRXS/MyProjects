@@ -1,0 +1,11 @@
+function [myIndex] = exists(node,myList)
+    result = find(myList(:,1) == node(1) & myList(:,2) == node(2) );
+    
+    [r,c] = size(result);
+    
+    if r == 0
+        myIndex = 0;
+    else
+        myIndex = result(1);
+    end
+end

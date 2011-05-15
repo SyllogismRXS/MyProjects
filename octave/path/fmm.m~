@@ -1,0 +1,135 @@
+function [path, explored, success] = fmm(Map, InitState, GoalState)
+% Computes the optimal path to the goal usin
+% the D* algorithm
+%
+% Each node is organized as: 
+% [y,x,CurrentCost,PathCostOnly,Parent y, Parent x, state]
+%   
+%
+    global EMPTY;
+    global PREVPATH;
+    global OBSTACLE;
+    global NumRows;
+    
+    %states
+    FAR_STATE    = 0;
+    FRONT_STATE  = 1;
+    EXPLOR_STATE = 2;
+    
+    %tempDir = [[1,0];[1,1];[0,1];[-1,1];[-1,0];[-1,-1];[0,-1];[1,-1]];
+    %costs   = [1,1,1,1,1,1,1,1];
+    tempDir = [[1,0];[0,1];[-1,0];[0,-1]];
+    costs   = [1,1,1,1];
+    
+    
+    [tempDirLen,c] = size(tempDir);    
+    
+    path = [];
+    
+    initNode = [InitState,0,0,-1,-1,FRONT_STATE];
+    initNode
+    frontier = [initNode];
+    explored = [];
+    
+    while true
+        
+        %If the frontier is empty, return failure
+        if qLen(frontier) == 0
+            path     = [];
+            success = false;
+            return;
+        end
+        
+        [curNode,frontier] = pop(frontier); %choose the lowest cost node in
+                                            %the queue
+        curNode(7) = EXPLOR_STATE;
+        
+        explored = push(curNode,explored); %add the current node to
+                                           %the explored queue
+                                
+        %Have we reached the goal?
+        if (curNode(1) == GoalState(1)) && (curNode(2) == GoalState(2)) 
+            success = true;
+            str = sprintf('CurrentCost: %d\tPathCost: %d\n',curNode(3),curNode(4));
+            disp(str);
+            
+            traceNode = curNode;            
+        
+            parentIndex = 1;
+            
+            while parentIndex > 0
+                path = [ traceNode  ; path ];
+                
+                parentIndex = exists([traceNode(5:6)],explored);
+                
+                if parentIndex > 0
+                    traceNode = explored(parentIndex,:);
+                end
+            end
+                
+            return;
+        end
+                
+                
+        for i = 1:tempDirLen
+            %Create a new node based on possible actions
+            %The cost to move to the next node is 1 square
+            tempNode = [curNode(1) + tempDir(i,1), ...
+                        curNode(2) + tempDir(i,2), ...
+                        curNode(4) + 0,     ...
+                        curNode(4) + 0,     ...
+                        curNode(1)                 ...
+                        curNode(2)                 ...
+                        FAR_STATE ];
+                                    
+            %is this correct?
+            %tempNode(3) = tempNode(3) + Dcheb_3(curNode,InitState,GoalState);
+            %tempNode(3) = min(tempNode
+            
+            if isMapLocEmpty(Map,tempNode)
+                
+                neighbors = [];
+                for j = 1:tempDirLen
+                    nodeCheck = [tempNode(1) + tempDir(j,1) , ...
+                                 tempNode(2) + tempDir(j,2)];
+                    
+                    tempIndex = exists(nodeCheck,explored);
+                    
+                    if tempIndex > 0;
+                        neighbors = [neighbors ; explored(tempIndex,:)]; 
+                    end
+                end
+                
+                [neighborRows, neighborCols] = size(neighbors);
+                                              
+                if neighborRows == 1
+                    tempNode(3) = neighbors(4) + 1;
+                    tempNode(4) = tempNode(3);
+                elseif neighborRows > 1
+                    %tempNode(3) = min(neighbors(1,4),neighbors(2,4))+ 1;
+                    %tempNode(4) = tempNode(3);
+                    tempNode(3) = 1/2*(  neighbors(1,4)  ...
+                                       + neighbors(2,4)  ...
+                                       + sqrt(2 - ( neighbors(2,4) - ...
+                                                    neighbors(1,4) )^2)); 
+                else
+                    error = true
+                    return;
+                end
+                                
+                frontIndex = exists(tempNode,frontier);
+                
+                if (exists(tempNode,explored) == 0) && (frontIndex == 0)
+                    tempNode(7) = FRONT_STATE;
+                    frontier = push(tempNode,frontier);
+                elseif frontIndex > 0
+                    if frontier(frontIndex,3) > tempNode(3)
+                        frontier = qRemove(frontIndex,frontier);
+                        frontier = push(tempNode,frontier);
+                    end
+                end 
+            end %check for map location empty?
+        end %check for loop through actions
+    end %check while TRUE
+end %function
+    

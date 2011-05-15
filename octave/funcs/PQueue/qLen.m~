@@ -1,0 +1,3 @@
+function [mySize] = qLen(myList)
+    [mySize,c] = size(myList);
+end
